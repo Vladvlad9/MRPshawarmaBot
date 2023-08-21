@@ -2,4 +2,13 @@ from aiogram.dispatcher.filters.state import StatesGroup, State
 
 
 class UserStates(StatesGroup):
-    pass
+    USERNAME = State()
+    Phone = State()
+    Time = State()
+    DESCRIPTION = State()
+
+    Confirmation = State()
+    SendingAdmins = State()
+
+    Quantity = State()
+    WriteUser = State()

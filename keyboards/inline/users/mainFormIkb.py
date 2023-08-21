@@ -1,17 +1,21 @@
+import asyncio
 import logging
 
 from aiogram.dispatcher import FSMContext
 from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton, CallbackQuery, Message
 from aiogram.utils.callback_data import CallbackData
+from aiogram.utils.exceptions import BadRequest
 
 from config import CONFIG
-from crud import CRUDSubCategory, CRUDProduct
+from crud import CRUDSubCategory, CRUDProduct, CRUDOrder
 from crud.categoryCRUD import CRUDCategory
 from crud.orderDetailCRUD import CRUDOrderDetail
 from crud.sizeCRUD import CRUDSize
 from crud.userCRUD import CRUDUsers
 from loader import bot
-from schemas import OrderDetailSchema
+from schemas import OrderDetailSchema, OrderSchema
+from states.users.userStates import UserStates
+import re
 
 main_cb = CallbackData("main", "target", "action", "id", "editId", "newId")
 
@@ -35,7 +39,35 @@ class MainForms:
         return text2 + f"К оплате {res_sum}\n\n"
 
     @staticmethod
-    async def main_ikb() -> InlineKeyboardMarkup:
+    async def order(callback: CallbackQuery = None, message: Message = None, state: FSMContext = None):
+        basket = await CRUDOrderDetail.get_all(user_id=callback.from_user.id)
+        textBasket = await MainForms.check(get_basket=basket)
+
+        getDataState = await state.get_data()
+        text = f"Данные вашего заказа:\n\n"\
+               f"Имя - <b>{getDataState['userName']}</b>\n"\
+               f"Телефон - <b>{getDataState['phone']}</b>\n"\
+               f"Время - <b>{getDataState['time']}</b>\n"\
+               f"<tg-spoiler>----------------------------"\
+               f"</tg-spoiler>\n\n"\
+               f"{textBasket}"
+
+        if callback:
+            await callback.message.edit_text(text=text,
+                                             reply_markup=await MainForms.confirmation_ikb(),
+                                             parse_mode="HTML")
+        else:
+            await message.answer(text=text,
+                                 reply_markup=await MainForms.confirmation_ikb(),
+                                 parse_mode="HTML")
+
+    @staticmethod
+    async def main_ikb(user_id: int) -> InlineKeyboardMarkup:
+        basket = await CRUDOrderDetail.get_all(user_id=user_id)
+        basket_text = "Корзина"
+        if basket:
+            basket_text = f"Корзина ({len(basket)})"
+
         return InlineKeyboardMarkup(
             inline_keyboard=[
                 [
@@ -44,7 +76,7 @@ class MainForms:
 
                 ],
                 [
-                    InlineKeyboardButton(text="Корзина",
+                    InlineKeyboardButton(text=basket_text,
                                          callback_data=main_cb.new("Basket", "getBasket", 0, 0, 0)),
                 ],
                 [
@@ -170,6 +202,103 @@ class MainForms:
         )
 
     @staticmethod
+    async def editBasket_ikb(user_id: int) -> InlineKeyboardMarkup:
+        dataBasket = {}
+
+        baskets = await CRUDOrderDetail.get_all(user_id=user_id)
+
+        for basket in baskets:
+            product = await CRUDProduct.get(product_id=basket.product_id)
+            subCategory = await CRUDSubCategory.get(sub_category_id=product.sub_category_id)
+            if "Product" in dataBasket:
+                dataBasket["Product"] += [{
+                    "name": subCategory.name,
+                    "quantity": basket.quantity,
+                    "id": subCategory.id,
+                    "basket_id": basket.id,
+                    "product_id": basket.product_id
+                }]
+            else:
+                dataBasket["Product"] = [{
+                    "name": subCategory.name,
+                    "quantity": basket.quantity,
+                    "id": subCategory.id,
+                    "basket_id": basket.id,
+                    "product_id": basket.product_id
+                }]
+
+        return InlineKeyboardMarkup(
+            inline_keyboard=[
+                                [
+                                    InlineKeyboardButton(text=item['name'],
+                                                         callback_data=main_cb.new("Basket", "EdShowName",
+                                                                                   item['id'],
+                                                                                   0, 0)),
+
+                                    InlineKeyboardButton(text=f"Кол-во {item['quantity']}",
+                                                         callback_data=main_cb.new("Basket", "editQuantity",
+                                                                                   item['basket_id'],
+                                                                                   item['product_id'],
+                                                                                   0)),
+                                    InlineKeyboardButton(text="Удалить",
+                                                         callback_data=main_cb.new("Basket", "editDelete",
+                                                                                   item['basket_id'], 0, 0))
+                                ]
+                                for basket, items in dataBasket.items() for item in items
+                            ] + [
+                                [
+                                    InlineKeyboardButton(text='← Назад',
+                                                         callback_data=main_cb.new("Basket", "getBasket", 0, 0, 0))
+                                ]
+                            ]
+        )
+
+    @staticmethod
+    async def skip_ikb() -> InlineKeyboardMarkup:
+        return InlineKeyboardMarkup(
+            inline_keyboard=[
+                [
+                    InlineKeyboardButton(text="Пропустить",
+                                         callback_data=main_cb.new("Basket", "Confirmation", 0, 0, 0))
+                ],
+                [
+                    InlineKeyboardButton(text="◀️ Назад",
+                                         callback_data=main_cb.new("Basket", "Confirmation", 0, 0, 0))
+                ]
+            ]
+        )
+
+    @staticmethod
+    async def confirmation_ikb() -> InlineKeyboardMarkup:
+        return InlineKeyboardMarkup(
+            inline_keyboard=[
+                [
+                    InlineKeyboardButton(text="Оформить",
+                                         callback_data=main_cb.new("Basket", "SendingAdmins", 0, 0, 0))
+                ],
+                [
+                    InlineKeyboardButton(text="Изменить данные",
+                                         callback_data=main_cb.new("Basket", "PlaceInOrder", 0, 0, 0))
+                ],
+                [
+                    InlineKeyboardButton(text="◀️ Назад",
+                                         callback_data=main_cb.new("Basket", "Confirmation", 0, 0, 0))
+                ]
+            ]
+        )
+
+    @staticmethod
+    async def confirmAdmin_ikb(user_id: int) -> InlineKeyboardMarkup:
+        return InlineKeyboardMarkup(
+            inline_keyboard=[
+                [
+                    InlineKeyboardButton(text="Подтвердить", callback_data=main_cb.new("Admins", "Confirm", user_id, 0, 0)),
+                    InlineKeyboardButton(text="Написать", callback_data=main_cb.new("Admins", "WriteUser", user_id, 0, 0)),
+                ]
+            ]
+        )
+
+    @staticmethod
     async def back_ikb(target: str, action: str, id: int = 0) -> InlineKeyboardMarkup:
         return InlineKeyboardMarkup(
             inline_keyboard=[
@@ -186,18 +315,20 @@ class MainForms:
                 data = main_cb.parse(callback_data=callback.data)
 
                 if data.get("target") == "Main":
+                    await state.finish()
                     text = "Здравствуйте!\n" \
                            "Чтобы сделать заказ перейдите в раздел меню"
                     await callback.message.edit_text(text=text,
-                                                     reply_markup=await MainForms.main_ikb())
+                                                     reply_markup=await MainForms.main_ikb(user_id=callback.from_user.id))
 
                 elif data.get("target") == "myProfile":
                     if data.get("action") == "getProfile":
                         user = await CRUDUsers.get(user_id=callback.from_user.id)
                         text = ("Профиль\n\n"
                                 f"Количество совершенных покупок - {user.purchase_quantity}\n\n"
-                                f"Реферальная ссылка - ")
+                                f'<code>https://t.me/FScollegeBot?start={callback.from_user.id}</code>')
                         await callback.message.edit_text(text=text,
+                                                         parse_mode="HTML",
                                                          reply_markup=await MainForms.back_ikb(target="Main",
                                                                                                action=""))
 
@@ -255,7 +386,7 @@ class MainForms:
                                 await callback.message.answer(text=f"_Название: <b>__</b>\n\n"
                                                                    f"Состав: <b>{product.description}</b>\n\n",
                                                               reply_markup=await MainForms.description_pizza_ikb(
-                                                                        price=int(product.price)),
+                                                                  price=int(product.price)),
                                                               parse_mode="HTML"
                                                               )
                         else:
@@ -310,10 +441,9 @@ class MainForms:
                                 await CRUDOrderDetail.update(orderDetail=orderDetailsProduct)
                                 text = "Обновили товар в корзине"
 
-
                                 await callback.message.delete()
                                 await callback.message.answer(text=f"Вы успешно {text} !",
-                                                              reply_markup=await MainForms.main_ikb())
+                                                              reply_markup=await MainForms.main_ikb(user_id=callback.from_user.id))
                         else:
                             text = "Добавили товар в корзину"
                             await CRUDOrderDetail.add(orderDetail=OrderDetailSchema(
@@ -324,7 +454,7 @@ class MainForms:
                             ))
                         await callback.message.delete()
                         await callback.message.answer(text=f"Вы успешно {text} !",
-                                                      reply_markup=await MainForms.main_ikb())
+                                                      reply_markup=await MainForms.main_ikb(user_id=callback.from_user.id))
 
                 elif data.get('target') == "Basket":
                     if data.get('action') == "getBasket":
@@ -332,8 +462,7 @@ class MainForms:
                         if basket:
                             textBasket = await MainForms.check(get_basket=basket)
                             await callback.message.edit_text(text=textBasket,
-                                                             reply_markup=await MainForms.back_ikb(target="Main",
-                                                                                                   action="")
+                                                             reply_markup=await MainForms.basket_ikb()
                                                              )
                         else:
                             text = "Ваша корзина пуста!\n" \
@@ -343,3 +472,175 @@ class MainForms:
                                                                  target="Main",
                                                                  action=""
                                                              ))
+
+                    elif data.get('action') == "PlaceInOrder":
+                        await state.finish()
+                        await callback.message.edit_text(text="Введите ваше Имя",
+                                                         reply_markup=await MainForms.back_ikb(target="Basket",
+                                                                                               action="getBasket"))
+                        await UserStates.USERNAME.set()
+
+                    elif data.get('action') == "Confirmation":
+                        await state.update_data(description="Без описания")
+                        await MainForms.order(callback=callback, state=state)
+
+                    elif data.get('action') == "SendingAdmins":
+                        getDataState = await state.get_data()
+                        user = await CRUDUsers.get(user_id=callback.from_user.id)
+                        user.purchase_quantity += 1
+                        await CRUDUsers.update(user=user)
+                        get_numer = 0
+                        try:
+                            get_numer = await CRUDOrder.add(order=OrderSchema(user_id=callback.from_user.id,
+                                                                              userName=getDataState['userName'],
+                                                                              total_amount=0,
+                                                                              phone=getDataState['phone'],
+                                                                              time=getDataState['time'],
+                                                                              description=getDataState['description'],
+                                                                              )
+                                                            )
+                            await callback.message.edit_text(text=f"Вы успешно оформили заказ <b>№{get_numer.id}</b>\n"
+                                                                  "Как только заказ будет готов вам придет сообщение",
+                                                             reply_markup=await MainForms.main_ikb(user_id=callback.from_user.id),
+                                                             parse_mode="HTML")
+
+                        except Exception as e:
+                            print(f'add order error {e}')
+
+                        basket = await CRUDOrderDetail.get_all(user_id=callback.from_user.id)
+                        textBasket = await MainForms.check(get_basket=basket)
+
+                        text = f"Новая заявка № {get_numer.id}!\n\n" \
+                               f"Имя - <b>{getDataState['userName']}</b>\n"\
+                               f"Телефон - <code>{getDataState['phone']}</code>\n"\
+                               f"Время - <b>{getDataState['time']}</b>\n"\
+                               f"<tg-spoiler>----------------------------"\
+                               f"</tg-spoiler>\n\n"\
+                               f"{textBasket}"
+
+                        tasks = []
+                        for user in CONFIG.BOT.ADMINS:
+                            tasks.append(bot.send_message(chat_id=user,
+                                                          text=text,
+                                                          reply_markup=await MainForms.confirmAdmin_ikb(
+                                                              user_id=callback.from_user.id
+                                                          ))
+                                         )
+
+                        await asyncio.gather(*tasks, return_exceptions=True)
+                        await state.finish()
+
+                    elif data.get('action') == "EditBasket":
+                        await state.finish()
+                        await callback.message.edit_text(text="Редактирование корзины",
+                                                         reply_markup=await MainForms.editBasket_ikb(
+                                                             user_id=callback.from_user.id)
+                                                         )
+
+                    elif data.get('action') == "EdShowName":
+                        subCategory = await CRUDSubCategory.get(sub_category_id=int(data.get('id')))
+                        await callback.answer(text=subCategory.name)
+
+                    elif data.get('action') == "editDelete":
+                        await CRUDOrderDetail.delete(orderDetail_id=int(data.get('id')))
+                        await callback.answer(text="Вы удалили товар!")
+                        await callback.message.edit_text("Редактирование корзины",
+                                                         reply_markup=await MainForms.editBasket_ikb(
+                                                             user_id=callback.from_user.id))
+
+                    elif data.get('action') == "editQuantity":
+                        await state.update_data(basket_id=int(data.get('id')))
+                        await state.update_data(product_id=int(data.get('editId')))
+
+                        await callback.message.edit_text("Введите количество!")
+                        await UserStates.Quantity.set()
+
+                elif data.get('target') == "Admins":
+                    if data.get('action') == "Confirm":
+                        await bot.send_message(chat_id=int(data.get('id')),
+                                               text="Ваш заказ готовиться!")
+
+                    elif data.get('action') == "WriteUser":
+                        await state.update_data(user_id=int(data.get('id')))
+                        await callback.message.answer(text="Напишите что бы ответить пользователю",
+                                                      reply_markup=await MainForms.back_ikb(target="Main",
+                                                                                               action=""))
+                        await UserStates.WriteUser.set()
+
+        if message:
+            await message.delete()
+
+            try:
+                await bot.delete_message(
+                    chat_id=message.from_user.id,
+                    message_id=message.message_id - 1
+                )
+            except BadRequest:
+                pass
+
+            if state:
+                if await state.get_state() == "UserStates:USERNAME":
+                    await state.update_data(userName=message.text)
+                    await message.answer(text="Введите ваш номер телефона",
+                                         reply_markup=await MainForms.back_ikb(target="Basket",
+                                                                               action="PlaceInOrder"))
+                    await UserStates.Phone.set()
+
+                elif await state.get_state() == "UserStates:Phone":
+                    try:
+                        phone_number = message.text
+                        if phone_number[0] in "+":
+                            phone_number = phone_number[1:]
+
+                        if re.match(r"^(?:375|80)[0-9]{9}$", phone_number):
+                            await state.update_data(phone=message.text)
+                            await message.answer(text="Уточните, к какому времени вы хотели бы забрать заказ?",
+                                                 reply_markup=await MainForms.back_ikb(target="",
+                                                                                       action=""))
+                            await UserStates.Time.set()
+                        else:
+                            await message.answer(text="Номер телефона введен не верно",
+                                                 reply_markup=await MainForms.back_ikb(target="Basket",
+                                                                                       action="PlaceInOrder"))
+                            await UserStates.Phone.set()
+                    except Exception as e:
+                        print(f"Phone number error - {e}")
+
+                        await message.answer(text="Номер телефона введен не верно",
+                                             reply_markup=await MainForms.back_ikb(target="Basket",
+                                                                                   action="PlaceInOrder"))
+                        await UserStates.Phone.set()
+
+                elif await state.get_state() == "UserStates:Time":
+                    await state.update_data(time=message.text)
+                    await message.answer(text="Уточните детали заказа",
+                                         reply_markup=await MainForms.skip_ikb())
+                    await UserStates.DESCRIPTION.set()
+
+                elif await state.get_state() == "UserStates:DESCRIPTION":
+                    await state.update_data(description=message.text)
+                    await MainForms.order(message=message, state=state)
+
+                elif await state.get_state() == "UserStates:Quantity":
+                    if message.text.isdigit():
+                        getStateData = await state.get_data()
+                        product = await CRUDProduct.get(product_id=int(getStateData['product_id']))
+                        order_details = await CRUDOrderDetail.get(basket_id=getStateData['basket_id'])
+                        order_details.quantity = int(message.text)
+                        order_details.subtotal = int(message.text) * product.price
+                        await CRUDOrderDetail.update(orderDetail=order_details)
+                        await message.answer(text="Редактирование корзины",
+                                             reply_markup=await MainForms.editBasket_ikb(user_id=message.from_user.id))
+                        await state.finish()
+                    else:
+                        await message.answer(text="Введите число!",
+                                             reply_markup=await MainForms.back_ikb(target="Basket",
+                                                                                   action="EditBasket"))
+                        await UserStates.Quantity.set()
+
+                elif await state.get_state() == "UserStates:WriteUser":
+                    getStateData = await state.get_data()
+                    await bot.send_message(chat_id=int(getStateData['user_id']),
+                                           text=message.text)
+
+                    await state.finish()

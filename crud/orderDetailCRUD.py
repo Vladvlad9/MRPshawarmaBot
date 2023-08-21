@@ -49,10 +49,16 @@ class CRUDOrderDetail(object):
 
     @staticmethod
     @create_async_session
-    async def get(user_id: int = None,
+    async def get(basket_id: int = None,
+                  user_id: int = None,
                   product_id: int = None,
                   session: AsyncSession = None) -> OrderDetailInDBSchema | None:
-        if product_id:
+        if basket_id:
+            orderDetails = await session.execute(
+                select(OrderDetail)
+                .where(OrderDetail.id == basket_id)
+            )
+        elif product_id:
             orderDetails = await session.execute(
                 select(OrderDetail)
                 .where(OrderDetail.user_id == user_id).where(OrderDetail.product_id == product_id)

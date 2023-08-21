@@ -54,10 +54,13 @@ class Order(Base):
     __tablename__ = 'orders'
 
     id = Column(Integer, primary_key=True)
-    customer_name = Column(Text)
-    customer_email = Column(Text)
+    userName = Column(Text)
+    user_id = Column(Integer)
     order_date = Column(TIMESTAMP, default=datetime.now())
     total_amount = Column(Float)
+    phone = Column(Text)
+    time = Column(Text)
+    description = Column(Text)
 
 
 class User(Base):
