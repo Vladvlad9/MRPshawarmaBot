@@ -25,16 +25,21 @@ def upgrade() -> None:
     )
     op.create_table('orders',
         sa.Column('id', sa.Integer(), nullable=False),
-        sa.Column('customer_name', sa.Text(), nullable=True),
-        sa.Column('customer_email', sa.Text(), nullable=True),
+        sa.Column('userName', sa.Text(), nullable=True),
+        sa.Column('user_id', sa.BigInteger(), nullable=True),
         sa.Column('order_date', sa.TIMESTAMP(), nullable=True),
         sa.Column('total_amount', sa.Float(), nullable=True),
+                    sa.Column('phone', sa.Text(), nullable=True),
+                    sa.Column('time', sa.Text(), nullable=True),
+                    sa.Column('description', sa.Text(), nullable=True),
+                    sa.Column('confirm', sa.Boolean(), nullable=True),
+                    sa.Column('bankcard', sa.Boolean(), nullable=True),
         sa.PrimaryKeyConstraint('id')
     )
     op.create_table('users',
                     sa.Column('id', sa.Integer(), nullable=False),
                     sa.Column('user_id', sa.BigInteger(), nullable=True),
-                    sa.Column('referred_by_id', sa.Integer(), nullable=True),
+                    sa.Column('purchase_quantity', sa.Integer(), nullable=True),
                     sa.PrimaryKeyConstraint('id')
                     )
 

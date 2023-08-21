@@ -38,12 +38,12 @@ class Product(Base):
     __tablename__ = 'products'
 
     id = Column(Integer, primary_key=True)
-    description = Column(Text)
-    price = Column(Float)
-    image_url = Column(Text)
     category_id = Column(Integer, ForeignKey('categories.id'))
     sub_category_id = Column(Integer, ForeignKey('sub_categories.id'))
     size_id = Column(Integer, ForeignKey('sizes.id'))
+    description = Column(Text)
+    price = Column(Float)
+    image_url = Column(Text)
 
     category = relationship("Category", back_populates="products")
     sub_categories = relationship("SubCategory", back_populates="products")
@@ -61,6 +61,8 @@ class Order(Base):
     phone = Column(Text)
     time = Column(Text)
     description = Column(Text)
+    confirm = Column(Boolean)
+    bankcard = Column(Boolean)
 
 
 class User(Base):

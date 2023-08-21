@@ -10,6 +10,8 @@ class OrderSchema(BaseModel):
     total_amount: float = Field(default=0)
     time: str
     description: str
+    confirm: bool = Field(default=False)
+    bankcard: bool = Field(default=False)
 
 
 class OrderInDBSchema(OrderSchema):
