@@ -369,7 +369,7 @@ class MainForms:
 
                         if product:
                             try:
-                                photo = open(f'image/{product.image_url}.jpg', 'rb')
+                                photo = open(f'/opt/git/MRPshawarmaBot/image/{product.image_url}.jpg', 'rb')
 
                                 await callback.message.delete()
                                 await callback.message.answer_photo(photo=photo,
@@ -401,7 +401,7 @@ class MainForms:
                         product = await CRUDProduct.get(category_id=int(get_state_data['category_id']),
                                                         sub_category_id=int(get_state_data['sub_category_id']))
                         try:
-                            photo = open(f'image/{product.image_url}.jpg', 'rb')
+                            photo = open(f'/opt/git/MRPshawarmaBot/image/{product.image_url}.jpg', 'rb')
 
                             await callback.message.delete()
                             await callback.message.answer_photo(photo=photo,
