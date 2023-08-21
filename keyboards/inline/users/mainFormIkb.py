@@ -426,10 +426,12 @@ class MainForms:
                     elif data.get('action') == 'InBasket':
                         try:
                             count = int(data.get('id'))
-
                             get_state_data = await state.get_data()
-                            product = await CRUDProduct.get(category_id=int(get_state_data['category_id']),
-                                                            sub_category_id=int(get_state_data['sub_category_id']))
+                            product = await CRUDProduct.get(category_id=1,
+                                                            sub_category_id=1)
+                            logging.info(f'cat: {int(get_state_data["category_id"])}')
+                            logging.info(f"sub_cat: {int(get_state_data['sub_category_id'])}")
+
                             orderDetails = await CRUDOrderDetail.get(user_id=callback.from_user.id)
 
                             orderDetailsProduct = await CRUDOrderDetail.get(user_id=callback.from_user.id,
