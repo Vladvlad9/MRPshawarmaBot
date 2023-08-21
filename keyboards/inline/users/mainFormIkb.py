@@ -431,30 +431,31 @@ class MainForms:
                                                         sub_category_id=int(get_state_data['sub_category_id']))
                         orderDetails = await CRUDOrderDetail.get(user_id=callback.from_user.id)
 
-                        if orderDetails:
-                            orderDetailsProduct = await CRUDOrderDetail.get(user_id=callback.from_user.id,
-                                                                            product_id=product.id)
-                            if orderDetailsProduct:
-                                orderDetailsProduct.quantity = count
-                                orderDetailsProduct.subtotal = product.price * count
+                        orderDetailsProduct = await CRUDOrderDetail.get(user_id=callback.from_user.id,
+                                                                        product_id=product.id)
+                        if orderDetailsProduct:
+                            orderDetailsProduct.quantity = count
+                            orderDetailsProduct.subtotal = product.price * count
 
-                                await CRUDOrderDetail.update(orderDetail=orderDetailsProduct)
-                                text = "Обновили товар в корзине"
+                            await CRUDOrderDetail.update(orderDetail=orderDetailsProduct)
+                            text = "Обновили товар в корзине"
 
-                                await callback.message.delete()
-                                await callback.message.answer(text=f"Вы успешно {text} !",
-                                                              reply_markup=await MainForms.main_ikb(user_id=callback.from_user.id))
+                            await callback.message.delete()
+                            await callback.message.answer(text=f"Вы успешно {text} !",
+                                                          reply_markup=await MainForms.main_ikb(
+                                                              user_id=callback.from_user.id))
                         else:
-                            text = "Добавили товар в корзину"
+                            texts = "Добавили товар в корзину"
                             await CRUDOrderDetail.add(orderDetail=OrderDetailSchema(
                                 user_id=callback.from_user.id,
                                 product_id=product.id,
                                 quantity=count,
                                 subtotal=product.price * count
                             ))
-                        await callback.message.delete()
-                        await callback.message.answer(text=f"Вы успешно {text} !",
-                                                      reply_markup=await MainForms.main_ikb(user_id=callback.from_user.id))
+                            await callback.message.delete()
+                            await callback.message.answer(text=f"Вы успешно {texts} !",
+                                                          reply_markup=await MainForms.main_ikb(
+                                                              user_id=callback.from_user.id))
 
                 elif data.get('target') == "Basket":
                     if data.get('action') == "getBasket":
