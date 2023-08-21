@@ -40,7 +40,8 @@ class MainForms:
 
     @staticmethod
     async def order(callback: CallbackQuery = None, message: Message = None, state: FSMContext = None):
-        basket = await CRUDOrderDetail.get_all(user_id=callback.from_user.id)
+        user = await CRUDUsers.get(user_id=callback.from_user.id)
+        basket = await CRUDOrderDetail.get_all(user_id=user.id)
         textBasket = await MainForms.check(get_basket=basket)
 
         getDataState = await state.get_data()
@@ -205,8 +206,8 @@ class MainForms:
     @staticmethod
     async def editBasket_ikb(user_id: int) -> InlineKeyboardMarkup:
         dataBasket = {}
-
-        baskets = await CRUDOrderDetail.get_all(user_id=user_id)
+        user = await CRUDUsers.get(user_id=user_id)
+        baskets = await CRUDOrderDetail.get_all(user_id=user.id)
 
         for basket in baskets:
             product = await CRUDProduct.get(product_id=basket.product_id)
@@ -515,8 +516,8 @@ class MainForms:
 
                         except Exception as e:
                             print(f'add order error {e}')
-
-                        basket = await CRUDOrderDetail.get_all(user_id=callback.from_user.id)
+                        user = await CRUDUsers.get(user_id=callback.from_user.id)
+                        basket = await CRUDOrderDetail.get_all(user_id=user.id)
                         textBasket = await MainForms.check(get_basket=basket)
 
                         text = f"Новая заявка № {get_numer.id}!\n\n" \

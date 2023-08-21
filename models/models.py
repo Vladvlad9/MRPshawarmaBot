@@ -77,7 +77,7 @@ class OrderDetail(Base):
     __tablename__ = 'order_details'
 
     id = Column(Integer, primary_key=True)
-    user_id = Column(Integer)
+    user_id = Column(BigInteger)
     product_id = Column(Integer, ForeignKey('products.id'))
     quantity = Column(Integer)
     subtotal = Column(Float)
