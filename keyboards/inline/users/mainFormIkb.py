@@ -436,29 +436,30 @@ class MainForms:
 
                             orderDetailsProduct = await CRUDOrderDetail.get(user_id=callback.from_user.id,
                                                                             product_id=product.id)
-                            if orderDetailsProduct:
-                                orderDetailsProduct.quantity = count
-                                orderDetailsProduct.subtotal = product.price * count
-
-                                await CRUDOrderDetail.update(orderDetail=orderDetailsProduct)
-                                text = "Обновили товар в корзине"
-
-                                await callback.message.delete()
-                                await callback.message.answer(text=f"Вы успешно {text} !",
-                                                              reply_markup=await MainForms.main_ikb(
-                                                                  user_id=callback.from_user.id))
-                            else:
-                                texts = "Добавили товар в корзину"
-                                await CRUDOrderDetail.add(orderDetail=OrderDetailSchema(
-                                    user_id=callback.from_user.id,
-                                    product_id=product.id,
-                                    quantity=count,
-                                    subtotal=product.price * count
-                                ))
-                                await callback.message.delete()
-                                await callback.message.answer(text=f"Вы успешно {texts} !",
-                                                              reply_markup=await MainForms.main_ikb(
-                                                                  user_id=callback.from_user.id))
+                            # if orderDetailsProduct:
+                            #     orderDetailsProduct.quantity = count
+                            #     orderDetailsProduct.subtotal = product.price * count
+                            #
+                            #     await CRUDOrderDetail.update(orderDetail=orderDetailsProduct)
+                            #     text = "Обновили товар в корзине"
+                            #
+                            #     await callback.message.delete()
+                            #     await callback.message.answer(text=f"Вы успешно {text} !",
+                            #                                   reply_markup=await MainForms.main_ikb(
+                            #                                       user_id=callback.from_user.id))
+                            # else:
+                            #     pass
+                            texts = "Добавили товар в корзину"
+                            await CRUDOrderDetail.add(orderDetail=OrderDetailSchema(
+                                user_id=callback.from_user.id,
+                                product_id=product.id,
+                                quantity=count,
+                                subtotal=product.price * count
+                            ))
+                            await callback.message.delete()
+                            await callback.message.answer(text=f"Вы успешно {texts} !",
+                                                          reply_markup=await MainForms.main_ikb(
+                                                              user_id=callback.from_user.id))
                         except Exception as e:
                             logging.error(f'Error in add basket: {e}')
 
