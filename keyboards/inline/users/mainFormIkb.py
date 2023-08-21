@@ -9,6 +9,7 @@ from crud import CRUDSubCategory, CRUDProduct
 from crud.categoryCRUD import CRUDCategory
 from crud.orderDetailCRUD import CRUDOrderDetail
 from crud.sizeCRUD import CRUDSize
+from crud.userCRUD import CRUDUsers
 from loader import bot
 from schemas import OrderDetailSchema
 
@@ -190,6 +191,16 @@ class MainForms:
                     await callback.message.edit_text(text=text,
                                                      reply_markup=await MainForms.main_ikb())
 
+                elif data.get("target") == "myProfile":
+                    if data.get("action") == "getProfile":
+                        user = await CRUDUsers.get(user_id=callback.from_user.id)
+                        text = ("Профиль\n\n"
+                                f"Количество совершенных покупок - {user.purchase_quantity}\n\n"
+                                f"Реферальная ссылка - ")
+                        await callback.message.edit_text(text=text,
+                                                         reply_markup=await MainForms.back_ikb(target="Main",
+                                                                                               action=""))
+
                 elif data.get("target") == "Menu":
                     if data.get("action") == "getMenu":
                         text = "Выберите категорию из списка ⬇️"
@@ -212,10 +223,11 @@ class MainForms:
                                                                  category_id=category_id)
                                                              )
                         else:
-                            await callback.message.edit_text(text="Товар временно отсутствует",
-                                                             reply_markup=await MainForms.back_ikb(target="Menu",
-                                                                                                   action="getMenu",
-                                                                                                   id=category_id))
+                            await callback.message.delete()
+                            await callback.message.answer(text="Товар временно отсутствует",
+                                                          reply_markup=await MainForms.back_ikb(target="Menu",
+                                                                                                action="getMenu",
+                                                                                                id=category_id))
 
                     elif data.get('action') == "Product":
                         sub_category_id = int(data.get('id'))
@@ -297,19 +309,22 @@ class MainForms:
 
                                 await CRUDOrderDetail.update(orderDetail=orderDetailsProduct)
                                 text = "Обновили товар в корзине"
-                            else:
-                                text = "Добавили товар в корзину"
-                                await CRUDOrderDetail.add(orderDetail=OrderDetailSchema(
-                                    user_id=callback.from_user.id,
-                                    product_id=product.id,
-                                    quantity=count,
-                                    subtotal=product.price * count
-                                ))
-                            await callback.message.delete()
-                            await callback.message.answer(text=f"Вы успешно {text} !",
-                                                          reply_markup=await MainForms.main_ikb())
+
+
+                                await callback.message.delete()
+                                await callback.message.answer(text=f"Вы успешно {text} !",
+                                                              reply_markup=await MainForms.main_ikb())
                         else:
-                            pass
+                            text = "Добавили товар в корзину"
+                            await CRUDOrderDetail.add(orderDetail=OrderDetailSchema(
+                                user_id=callback.from_user.id,
+                                product_id=product.id,
+                                quantity=count,
+                                subtotal=product.price * count
+                            ))
+                        await callback.message.delete()
+                        await callback.message.answer(text=f"Вы успешно {text} !",
+                                                      reply_markup=await MainForms.main_ikb())
 
                 elif data.get('target') == "Basket":
                     if data.get('action') == "getBasket":

@@ -60,14 +60,12 @@ class Order(Base):
     total_amount = Column(Float)
 
 
-
 class User(Base):
     __tablename__ = 'users'
 
     id = Column(Integer, primary_key=True)
     user_id = Column(BigInteger)
-    referred_by_id = Column(Integer, ForeignKey('referrals.id'))
-
+    purchase_quantity = Column(Integer)
 
 
 class OrderDetail(Base):
@@ -80,9 +78,6 @@ class OrderDetail(Base):
     subtotal = Column(Float)
 
     product = relationship("Product")
-
-
-
 
 
 class Referrals(Base):

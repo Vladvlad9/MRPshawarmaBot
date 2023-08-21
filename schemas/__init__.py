@@ -5,3 +5,4 @@ from .subCategorySchemas import SubCategoryInDBSchema, SubCategorySchema
 from .productsSchemas import ProductInDBSchema, ProductSchema
 from .sizeSchemas import SizeInDBSchema, SizeSchema
 from .OrderDetailSchemas import OrderDetailSchema, OrderDetailInDBSchema
+from .userSchemas import UserSchema, UserInDBSchema

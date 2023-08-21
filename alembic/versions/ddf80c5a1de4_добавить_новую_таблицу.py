@@ -53,8 +53,11 @@ def upgrade() -> None:
         sa.Column('name', sa.Text(), nullable=True),
         sa.PrimaryKeyConstraint('id')
     )
-    op.create_table('sub_categories',
+    op.create_table(
+        'sub_categories',
+
         sa.Column('id', sa.Integer(), nullable=False),
+        sa.Column('category_id', sa.Integer(), nullable=False),
         sa.Column('name', sa.Text(), nullable=True),
         sa.PrimaryKeyConstraint('id')
     )
@@ -74,11 +77,11 @@ def upgrade() -> None:
         )
     op.create_table('order_details',
         sa.Column('id', sa.Integer(), nullable=False),
-        sa.Column('order_id', sa.Integer(), nullable=True),
+        sa.Column('user_id', sa.Integer(), nullable=True),
         sa.Column('product_id', sa.Integer(), nullable=True),
         sa.Column('quantity', sa.Integer(), nullable=True),
         sa.Column('subtotal', sa.Float(), nullable=True),
-        sa.ForeignKeyConstraint(['order_id'], ['orders.id'], ),
+        sa.ForeignKeyConstraint(['user_id'], ['users.id'], ),
         sa.ForeignKeyConstraint(['product_id'], ['products.id'], ),
         sa.PrimaryKeyConstraint('id')
     )
