@@ -6,9 +6,11 @@ class UserStates(StatesGroup):
     Phone = State()
     Time = State()
     DESCRIPTION = State()
+    BankCard = State()
 
     Confirmation = State()
     SendingAdmins = State()
 
     Quantity = State()
     WriteUser = State()
+

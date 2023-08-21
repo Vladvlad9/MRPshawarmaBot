@@ -45,10 +45,13 @@ class MainForms:
         textBasket = await MainForms.check(get_basket=basket)
 
         getDataState = await state.get_data()
+        getCard = "Картой" if getDataState['bankcard'] == "yes" else "Наличными"
+
         text = f"Данные вашего заказа:\n\n"\
                f"Имя - <b>{getDataState['userName']}</b>\n"\
                f"Телефон - <b>{getDataState['phone']}</b>\n"\
                f"Время - <b>{getDataState['time']}</b>\n"\
+               f"Оплата - {getCard}\n"\
                f"<tg-spoiler>----------------------------"\
                f"</tg-spoiler>\n\n"\
                f"{textBasket}"
@@ -301,6 +304,17 @@ class MainForms:
         )
 
     @staticmethod
+    async def bankCard_ikb() -> InlineKeyboardMarkup:
+        return InlineKeyboardMarkup(
+            inline_keyboard=[
+                [
+                    InlineKeyboardButton(text="Да", callback_data=main_cb.new("Basket", "BankCard", "yes", 0, 0)),
+                    InlineKeyboardButton(text="Нет", callback_data=main_cb.new("Basket", "BankCard", "no", 0, 0))
+                ]
+            ]
+        )
+
+    @staticmethod
     async def back_ikb(target: str, action: str, id: int = 0) -> InlineKeyboardMarkup:
         return InlineKeyboardMarkup(
             inline_keyboard=[
@@ -395,7 +409,7 @@ class MainForms:
                             await callback.message.edit_text(text="Товар временно отсутствует",
                                                              reply_markup=await MainForms.back_ikb(target="Menu",
                                                                                                    action="Category",
-                                                                                                   id=sub_category_id))
+                                                                                                   id=category_id))
 
                     elif data.get('action') == 'ProductsPage':
                         page = int(data.get('id'))
@@ -490,6 +504,12 @@ class MainForms:
                                                                                                action="getBasket"))
                         await UserStates.USERNAME.set()
 
+                    elif data.get('action') == "BankCard":
+                        await state.update_data(bankcard=data.get('id'))
+                        await callback.message.edit_text(text="Уточните детали заказа",
+                                                         reply_markup=await MainForms.skip_ikb())
+                        await UserStates.DESCRIPTION.set()
+
                     elif data.get('action') == "Confirmation":
                         await state.update_data(description="Без описания")
                         await MainForms.order(callback=callback, state=state)
@@ -501,12 +521,14 @@ class MainForms:
                         await CRUDUsers.update(user=user)
                         get_numer = 0
                         try:
+                            bankCard = True if getDataState['bankcard'] == "yes" else False
                             get_numer = await CRUDOrder.add(order=OrderSchema(user_id=callback.from_user.id,
                                                                               userName=getDataState['userName'],
                                                                               total_amount=0,
                                                                               phone=getDataState['phone'],
                                                                               time=getDataState['time'],
                                                                               description=getDataState['description'],
+                                                                              bankcard=bankCard
                                                                               )
                                                             )
                             await callback.message.edit_text(text=f"Вы успешно оформили заказ <b>№{get_numer.id}</b>\n"
@@ -623,9 +645,8 @@ class MainForms:
 
                 elif await state.get_state() == "UserStates:Time":
                     await state.update_data(time=message.text)
-                    await message.answer(text="Уточните детали заказа",
-                                         reply_markup=await MainForms.skip_ikb())
-                    await UserStates.DESCRIPTION.set()
+                    await message.answer(text="Оплата картой?",
+                                         reply_markup=await MainForms.bankCard_ikb())
 
                 elif await state.get_state() == "UserStates:DESCRIPTION":
                     await state.update_data(description=message.text)

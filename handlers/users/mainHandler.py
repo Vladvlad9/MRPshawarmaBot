@@ -1,3 +1,5 @@
+import logging
+
 from aiogram import types
 from aiogram.dispatcher.storage import FSMContext
 from aiogram.utils.exceptions import BadRequest
@@ -10,8 +12,16 @@ from schemas import UserSchema, ReferralSchema
 from states.users.userStates import UserStates
 
 
-async def get_user_id_by_referral_code(referral_code):
-    pass
+@dp.message_handler(commands=['start'], state=UserStates.all_states)
+async def stateStart(message: types.Message):
+    try:
+        text = "Здравствуйте!\n" \
+               "Чтобы сделать заказ перейдите в раздел меню"
+        user = await CRUDUsers.get(user_id=message.from_user.id)
+        await message.answer(text=text,
+                             reply_markup=await MainForms.main_ikb(user_id=message.from_user.id))
+    except Exception as e:
+        logging.error(f'Error in new_topic_cmd: {e}')
 
 
 @dp.message_handler(commands=["start"])
