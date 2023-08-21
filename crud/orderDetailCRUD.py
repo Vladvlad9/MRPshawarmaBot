@@ -1,3 +1,5 @@
+import logging
+
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy import select, update, delete, and_
@@ -17,8 +19,8 @@ class CRUDOrderDetail(object):
         session.add(orderDetails)
         try:
             await session.commit()
-        except IntegrityError:
-            pass
+        except IntegrityError as e:
+            logging.error(f'Error in add basket: {e}')
         else:
             await session.refresh(orderDetails)
             return OrderDetailInDBSchema(**orderDetails.__dict__)
