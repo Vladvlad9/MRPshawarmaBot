@@ -326,7 +326,7 @@ class MainForms:
                         user = await CRUDUsers.get(user_id=callback.from_user.id)
                         text = ("Профиль\n\n"
                                 f"Количество совершенных покупок - {user.purchase_quantity}\n\n"
-                                f'<code>https://t.me/FScollegeBot?start={callback.from_user.id}</code>')
+                                f'<code>https://t.me/MyPersonalUladIslauTestBot?start={callback.from_user.id}</code>')
                         await callback.message.edit_text(text=text,
                                                          parse_mode="HTML",
                                                          reply_markup=await MainForms.back_ikb(target="Main",
