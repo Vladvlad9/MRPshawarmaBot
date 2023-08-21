@@ -449,7 +449,8 @@ class MainForms:
                             #                                       user_id=callback.from_user.id))
                             # else:
                             #     pass
-                            texts = "Добавили товар в корзину"
+                            texts = ("Добавили товар в корзину \n"
+                                     "я тут")
                             await CRUDOrderDetail.add(orderDetail=OrderDetailSchema(
                                 user_id=callback.from_user.id,
                                 product_id=product.id,
