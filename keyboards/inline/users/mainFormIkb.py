@@ -63,7 +63,8 @@ class MainForms:
 
     @staticmethod
     async def main_ikb(user_id: int) -> InlineKeyboardMarkup:
-        basket = await CRUDOrderDetail.get_all(user_id=user_id)
+        user = await CRUDUsers.get(user_id=user_id)
+        basket = await CRUDOrderDetail.get_all(user_id=user.id)
         basket_text = "Корзина"
         if basket:
             basket_text = f"Корзина ({len(basket)})"
@@ -465,7 +466,8 @@ class MainForms:
 
                 elif data.get('target') == "Basket":
                     if data.get('action') == "getBasket":
-                        basket = await CRUDOrderDetail.get_all(user_id=callback.from_user.id)
+                        user = await CRUDUsers.get(user_id=callback.from_user.id)
+                        basket = await CRUDOrderDetail.get_all(user_id=user.id)
                         if basket:
                             textBasket = await MainForms.check(get_basket=basket)
                             await callback.message.edit_text(text=textBasket,
