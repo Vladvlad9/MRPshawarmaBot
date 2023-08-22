@@ -31,7 +31,7 @@ class MainForms:
             product = await CRUDProduct.get(product_id=i.product_id)
             sub_category = await CRUDSubCategory.get(sub_category_id=product.sub_category_id)
             res_sum += i.subtotal
-            text2 += f"Товар № {count}\n" \
+            text2 += f"Товар № <u>{count}\n</u>" \
                      f"Название - {sub_category.name}\n" \
                      f"Цена - {product.price}\n" \
                      f"Количество - {i.quantity}\n\n"
@@ -88,7 +88,7 @@ class MainForms:
                     InlineKeyboardButton(text="👤Мой профиль",
                                          callback_data=main_cb.new("myProfile", "getProfile", 0, 0, 0)),
                     InlineKeyboardButton(text="🆘Мне нужна помощь",
-                                         callback_data=main_cb.new("help", "getHelp", 0, 0, 0))
+                                         callback_data=main_cb.new("Help", "getHelp", 0, 0, 0))
                 ]
             ]
         )
@@ -443,14 +443,11 @@ class MainForms:
                         try:
                             count = int(data.get('id'))
                             get_state_data = await state.get_data()
-                            product = await CRUDProduct.get(category_id=1,
-                                                            sub_category_id=1)
-                            logging.info(f'cat: {int(get_state_data["category_id"])}')
-                            logging.info(f"sub_cat: {int(get_state_data['sub_category_id'])}")
+                            product = await CRUDProduct.get(category_id=int(get_state_data["category_id"]),
+                                                            sub_category_id=int(get_state_data['sub_category_id']))
 
-                            orderDetails = await CRUDOrderDetail.get(user_id=callback.from_user.id)
-
-                            orderDetailsProduct = await CRUDOrderDetail.get(user_id=callback.from_user.id,
+                            user = await CRUDUsers.get(user_id=callback.from_user.id)
+                            orderDetailsProduct = await CRUDOrderDetail.get(user_id=user.id,
                                                                             product_id=product.id)
                             if orderDetailsProduct:
                                 orderDetailsProduct.quantity = count
@@ -541,11 +538,13 @@ class MainForms:
                         user = await CRUDUsers.get(user_id=callback.from_user.id)
                         basket = await CRUDOrderDetail.get_all(user_id=user.id)
                         textBasket = await MainForms.check(get_basket=basket)
+                        getCard = "Картой" if getDataState['bankcard'] == "yes" else "Наличными"
 
                         text = f"Новая заявка № {get_numer.id}!\n\n" \
                                f"Имя - <b>{getDataState['userName']}</b>\n"\
                                f"Телефон - <code>{getDataState['phone']}</code>\n"\
                                f"Время - <b>{getDataState['time']}</b>\n"\
+                               f"Оплата - {getCard}"\
                                f"<tg-spoiler>----------------------------"\
                                f"</tg-spoiler>\n\n"\
                                f"{textBasket}"
@@ -598,6 +597,14 @@ class MainForms:
                                                       reply_markup=await MainForms.back_ikb(target="Main",
                                                                                                action=""))
                         await UserStates.WriteUser.set()
+
+                elif data.get('target') == "Help":
+                    if data.get('action') == "getHelp":
+                        text = ("Если у вас возникли какие-то проблемы, или вопроссы, "
+                                "обращайтесь за помощью к менеджеру @HannaZamkovets, или по телефону +375(44)797-10-10")
+                        await callback.message.edit_text(text=text,
+                                                         reply_markup=await MainForms.back_ikb(target="Main",
+                                                                                               action=""))
 
         if message:
             await message.delete()
