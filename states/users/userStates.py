@@ -14,3 +14,5 @@ class UserStates(StatesGroup):
     Quantity = State()
     WriteUser = State()
 
+    Question = State()
+

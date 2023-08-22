@@ -47,6 +47,17 @@ async def registration_start(message: types.Message):
     await message.answer(text=text, reply_markup=await MainForms.main_ikb(user_id=message.from_user.id))
 
 
+@dp.message_handler(commands=["help"])
+async def help(message: types.Message):
+    text = ("Если у вас возникли какие-то проблемы, или вопроссы, "
+            "обращайтесь за помощью к менеджеру @HannaZamkovets, или по телефону +375(44)797-10-10")
+    await message.delete()
+    await message.answer(text=text,
+                         reply_markup=await MainForms.back_ikb(target="Main",
+                                                               action=""))
+
+
+
 @dp.callback_query_handler(main_cb.filter())
 @dp.callback_query_handler(main_cb.filter(), state=UserStates.all_states)
 async def process_callback(callback: types.CallbackQuery, state: FSMContext = None):

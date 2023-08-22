@@ -83,6 +83,8 @@ class MainForms:
                 [
                     InlineKeyboardButton(text=basket_text,
                                          callback_data=main_cb.new("Basket", "getBasket", 0, 0, 0)),
+                    # InlineKeyboardButton(text="Задать вопрос",
+                    #                      callback_data=main_cb.new("Question", "getQuestion", 0, 0, 0)),
                 ],
                 [
                     InlineKeyboardButton(text="👤Мой профиль",
@@ -606,6 +608,13 @@ class MainForms:
                                                          reply_markup=await MainForms.back_ikb(target="Main",
                                                                                                action=""))
 
+                elif data.get('target') == "Question":
+                    if data.get('action') == "getQuestion":
+                        await callback.message.edit_text(text="Введите ваш вопрос",
+                                                         reply_markup=await MainForms.back_ikb(target="Main",
+                                                                                               action=""))
+                        await UserStates.Question.set()
+
         if message:
             await message.delete()
 
@@ -681,4 +690,9 @@ class MainForms:
                     await bot.send_message(chat_id=int(getStateData['user_id']),
                                            text=message.text)
 
+                    await state.finish()
+
+                elif await state.get_state() == "UserStates:Question":
+                    await bot.send_message(-976339372, message.text)
+                    await bot.forward_message(chat_id=-976339372,from_chat_id=message.from_user.id,message_id=message.message_id)
                     await state.finish()
